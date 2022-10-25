@@ -1,0 +1,35 @@
+HttpClient client = new HttpClient();
+     
+private async void click(object sender, RoutedEventArgs e)
+{
+	var response = await client.GetAsync("https://localhost:7251/api/Test");
+	text1.Text = $"{response.StatusCode} {(int)response.StatusCode}\n";
+	IEnumerable<WeatherForecast> array;
+	using (var fs = response.Content.ReadAsStream())
+	{
+		array = JsonSerializer.Deserialize<IEnumerable<WeatherForecast>>(fs);
+	}
+	//list1.ItemsSource = array; //результат передаем в интерфейс
+}
+
+JsonSerializerOptions options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true }; 
+private async void clickPost(object sender, RoutedEventArgs e)
+{
+	WeatherForecast weather = new WeatherForecast { Date = DateTime.Now
+		, TemperatureC = 13, Summary = "Стремно"};
+	StreamContent content;
+	HttpResponseMessage response;
+	using (var fs = new MemoryStream())
+	{
+		JsonSerializer.Serialize<WeatherForecast>(fs, weather, options) ;
+		fs.Seek(0, SeekOrigin.Begin);
+		content = new StreamContent(fs);
+		content.Headers.Add("Content-Type", "application/json");
+		response = await client.PostAsync("https://localhost:7251/api/Test", content);
+	}
+	using (var fs = response.Content.ReadAsStream())
+	{
+		weather = JsonSerializer.Deserialize<WeatherForecast>(fs, options);
+	}
+	//результат weather передаем в интерфейс
+}
